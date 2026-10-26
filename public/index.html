@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f14">
+  <meta name="description" content="Tetris with realtime placement decisions from Microsoft-Decision-1.">
+  <title>Decision Arcade — Microsoft-Decision-1 × Tetris</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Decision Arcade home"><span class="brand-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>decision<span class="brand-light">arcade</span></span></a>
+      <nav aria-label="Resources">
+        <span class="model-label"><span class="microsoft-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Microsoft-Decision-1</span>
+        <a class="docs-link" href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision" target="_blank" rel="noreferrer">Model docs <span aria-hidden="true">↗</span></a>
+        <button id="setup-button" class="icon-button" aria-label="Open connection setup" title="Connection setup">⚙</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <h1 id="page-title">Decision-1 <span>Tetris</span></h1>
+        <div class="connection"><span id="connection-dot" class="status-dot"></span><span id="connection-label">CONNECTING</span></div>
+      </section>
+
+      <div class="workspace">
+        <aside class="controls-column">
+          <section class="panel control-panel" aria-labelledby="pilot-title">
+            <div class="panel-heading"><h2 id="pilot-title">Mode</h2></div>
+            <div class="mode-options" role="group" aria-label="Game pilot">
+              <button class="mode-option" data-mode="model" aria-pressed="false"><span class="mode-icon">✳</span><span><strong>Decision-1</strong><small>Azure Foundry</small></span><span class="radio-indicator"></span></button>
+              <button class="mode-option" data-mode="demo" aria-pressed="false"><span class="mode-icon">◈</span><span><strong>Local demo</strong><small>Local heuristic</small></span><span class="radio-indicator"></span></button>
+              <button class="mode-option" data-mode="manual" aria-pressed="false"><span class="mode-icon">⌘</span><span><strong>Manual</strong><small>Keyboard / touch</small></span><span class="radio-indicator"></span></button>
+            </div>
+            <div class="control-divider"></div>
+            <div class="label-row"><h3>Playback speed</h3></div>
+            <div class="speed-options" role="group" aria-label="Playback speed"><button data-speed="0.5" aria-pressed="false">0.5×</button><button data-speed="1" aria-pressed="true">1×</button><button data-speed="2" aria-pressed="false">2×</button><button data-speed="4" aria-pressed="false">4×</button></div>
+            <p class="subtle-note">Speeds up play, not model inference.</p>
+            <div id="config-note" class="config-note"><div><strong>Foundry not configured</strong><p>Add your endpoint and API key to use Decision-1.</p><button class="text-button" id="config-setup">Connection setup <span aria-hidden="true">↗</span></button></div></div>
+          </section>
+
+          <section class="panel keyboard-panel" aria-labelledby="controls-title">
+            <div class="panel-heading"><h2 id="controls-title">Keyboard controls</h2><span class="keyboard-icon" aria-hidden="true">⌨</span></div>
+            <dl class="key-list"><div><dt>Move</dt><dd><kbd>←</kbd><kbd>→</kbd></dd></div><div><dt>Rotate</dt><dd><kbd>↑</kbd></dd></div><div><dt>Soft drop</dt><dd><kbd>↓</kbd></dd></div><div><dt>Hard drop</dt><dd><kbd class="wide-key">space</kbd></dd></div><div><dt>Pause / resume</dt><dd><kbd>P</kbd></dd></div></dl>
+          </section>
+        </aside>
+
+        <section class="panel arena" aria-labelledby="arena-title">
+          <div class="arena-heading"><div><span class="tiny-square"></span><h2 id="arena-title">TETRIS</h2><span class="arena-dimensions">10 × 20</span></div><span id="game-state" class="game-state">STANDBY</span></div>
+          <div class="scoreboard"><div><span>SCORE</span><strong id="score">000000</strong></div><div><span>LINES</span><strong id="lines">00</strong></div><div><span>LEVEL</span><strong id="level">01</strong></div></div>
+          <div class="game-stage">
+            <div class="board-wrap">
+              <canvas id="board" width="300" height="600" aria-label="Tetris game board, 10 columns by 20 rows" aria-describedby="controls-title" role="img" tabindex="0"></canvas>
+              <div id="board-overlay" class="board-overlay">
+                <div class="overlay-tetromino" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                <h3 id="overlay-title">Ready</h3>
+                <p id="overlay-copy" hidden></p>
+                <button id="overlay-start" class="primary-button">Start game <span aria-hidden="true">↗</span></button>
+              </div>
+              <div class="thinking-indicator" id="thinking-indicator" hidden><span class="spinner"></span> Choosing a placement</div>
+              <div id="line-flash" class="line-flash" aria-hidden="true"></div>
+            </div>
+            <aside class="next-rail" aria-label="Upcoming pieces"><span class="rail-label">UP NEXT</span><canvas id="next" width="80" height="300" role="img" aria-label="Next five Tetris pieces"></canvas><div class="piece-count"><span id="pieces">0</span><small>PIECES<br>PLACED</small></div><div class="ghost-legend"><span></span>Landing<br>preview</div></aside>
+          </div>
+          <div class="game-actions"><button class="primary-button" id="play-button" disabled><span id="play-icon" aria-hidden="true">▶</span><span id="play-label">Start game</span></button><button id="reset-button" class="secondary-button" aria-label="Reset game" disabled><span aria-hidden="true">↺</span> Reset</button><span id="runtime" class="runtime">00:00</span></div>
+          <div id="touch-controls" class="touch-controls" aria-label="Touch game controls" hidden><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate clockwise">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="down" aria-label="Soft drop">↓</button><button data-action="drop">Drop</button></div>
+        </section>
+
+        <aside class="insights-column">
+          <section class="panel telemetry-panel" aria-labelledby="telemetry-title">
+            <div class="panel-heading"><h2 id="telemetry-title">Telemetry</h2><span id="source-tag" class="source-tag">LOCAL</span></div>
+            <div class="latency-heading"><span id="latency-label">MODEL LATENCY</span><span class="mini-wave" aria-hidden="true">▁▂▅▃▂▆▃</span></div>
+            <div class="latency-value"><strong id="latency">—</strong><span>ms</span><span id="latency-live" class="latency-live">AWAITING API</span></div>
+            <canvas id="latency-chart" width="600" height="100" aria-label="Measured latency of the most recent model decisions" role="img"></canvas>
+            <div class="metric-grid"><div><span>P50 LATENCY</span><strong id="p50">— <small>ms</small></strong></div><div><span>P95 LATENCY</span><strong id="p95">— <small>ms</small></strong></div><div><span>DECISIONS</span><strong id="decisions">0</strong></div><div><span>MODEL RESPONSES</span><strong id="model-calls">0</strong></div><div><span>MODEL PLACEMENTS</span><strong id="model-placements">0</strong></div><div><span>LOCAL SAFETY MOVES</span><strong id="safety-moves">0</strong></div></div>
+            <p class="telemetry-note">Includes network time. P50/P95 use the last 500 successful model responses.</p>
+          </section>
+
+          <section class="panel decisions-panel" aria-labelledby="decisions-title">
+            <div class="panel-heading"><h2 id="decisions-title">Decisions</h2><span id="stream-indicator" class="stream-indicator"><span class="status-dot"></span> IDLE</span></div>
+            <div id="decision-stream" class="decision-stream"><div class="stream-empty"><p>No decisions yet.</p></div></div>
+            <details id="decision-inspector" class="decision-inspector"><summary>Inspect latest decision <span aria-hidden="true">↗</span></summary><div id="candidate-details" class="candidate-details">Start a game to see candidate placements.</div></details>
+          </section>
+        </aside>
+      </div>
+
+      <section class="panel response-panel" aria-labelledby="response-title">
+        <div class="panel-heading">
+          <h2 id="response-title">Model responses</h2>
+          <div class="response-tools">
+            <span id="response-status" class="response-status">Waiting</span>
+            <label for="response-select" class="sr-only">Select model response</label>
+            <select id="response-select" disabled><option value="latest">Latest response</option></select>
+          </div>
+        </div>
+        <div class="response-content">
+          <dl class="response-metrics">
+            <div><dt>Response time</dt><dd class="response-timing" title="Server-to-Foundry roundtrip, including network time"><strong id="response-latency">—</strong><span>ms</span></dd></div>
+            <div><dt>Model</dt><dd id="response-model">—</dd></div>
+            <div><dt>Received</dt><dd><time id="response-received">—</time></dd></div>
+          </dl>
+          <pre id="model-response" class="response-json" aria-label="Raw model response" tabindex="0">No model responses yet.</pre>
+        </div>
+        <p id="response-error" class="response-error" role="status" hidden></p>
+      </section>
+
+    </main>
+  </div>
+
+  <dialog id="setup-dialog" aria-labelledby="setup-title"><div class="dialog-heading"><h2 id="setup-title">Foundry connection</h2><button id="close-setup" class="icon-button" aria-label="Close connection setup">×</button></div><p>Deploy Microsoft-Decision-1 in Azure Foundry, then add your resource details to the <code>.env</code> file in this project.</p><pre>AZURE_ENDPOINT=https://YOUR-RESOURCE.services.ai.azure.com
+AZURE_API_KEY=your-api-key
+DEPLOYMENT_NAME=microsoft-decision-1</pre><p>Use your actual <strong>deployment name</strong>. Restart with <code>npm start</code> after saving, then select <strong>Decision-1</strong>.</p><div class="dialog-callout"><span aria-hidden="true">⌁</span>Your API key stays on the Node.js server. The browser only receives game state and decision results.</div><a class="primary-button" href="https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision" target="_blank" rel="noreferrer">Open setup guide <span aria-hidden="true">↗</span></a></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>

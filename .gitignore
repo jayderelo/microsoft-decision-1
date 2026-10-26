@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Private environment and local authentication
+.env
+.env.*
+*.env
+!.env.example
+.envrc
+.envrc.*
+.npmrc
+.secrets/
+secrets/
+credentials.json
+credentials.*.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Generated tests, traces, profiles, and logs
+coverage/
+test-results/
+playwright-report/
+performance-results/
+*.log
+
+# Local tooling, editor state, and operating-system files
+.cache/
+.idea/
+.vscode/
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,25 @@
+{
+  "name": "microsoft-decision-tetris",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A realtime Tetris decision lab powered by Microsoft-Decision-1.",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --watch --env-file-if-exists=.env server.js",
+    "test": "node --test test/*.test.js",
+    "test:browser": "playwright test",
+    "profile:latency": "node --env-file-if-exists=.env scripts/profile-latency.mjs",
+    "profile:gameplay": "node --env-file-if-exists=.env scripts/profile-gameplay.mjs",
+    "check": "node --check server.js && node --check src/tetris.js && node --check src/decision.js && node --check src/session.js && node --check public/app.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}
